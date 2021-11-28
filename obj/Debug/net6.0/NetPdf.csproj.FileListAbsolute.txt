@@ -1,0 +1,15 @@
+/home/steve/Code/dotnet/NetPdf/bin/Debug/net6.0/NetPdf
+/home/steve/Code/dotnet/NetPdf/bin/Debug/net6.0/NetPdf.deps.json
+/home/steve/Code/dotnet/NetPdf/bin/Debug/net6.0/NetPdf.runtimeconfig.json
+/home/steve/Code/dotnet/NetPdf/bin/Debug/net6.0/NetPdf.dll
+/home/steve/Code/dotnet/NetPdf/bin/Debug/net6.0/ref/NetPdf.dll
+/home/steve/Code/dotnet/NetPdf/bin/Debug/net6.0/NetPdf.pdb
+/home/steve/Code/dotnet/NetPdf/obj/Debug/net6.0/NetPdf.csproj.AssemblyReference.cache
+/home/steve/Code/dotnet/NetPdf/obj/Debug/net6.0/NetPdf.GeneratedMSBuildEditorConfig.editorconfig
+/home/steve/Code/dotnet/NetPdf/obj/Debug/net6.0/NetPdf.AssemblyInfoInputs.cache
+/home/steve/Code/dotnet/NetPdf/obj/Debug/net6.0/NetPdf.AssemblyInfo.cs
+/home/steve/Code/dotnet/NetPdf/obj/Debug/net6.0/NetPdf.csproj.CoreCompileInputs.cache
+/home/steve/Code/dotnet/NetPdf/obj/Debug/net6.0/NetPdf.dll
+/home/steve/Code/dotnet/NetPdf/obj/Debug/net6.0/ref/NetPdf.dll
+/home/steve/Code/dotnet/NetPdf/obj/Debug/net6.0/NetPdf.pdb
+/home/steve/Code/dotnet/NetPdf/obj/Debug/net6.0/NetPdf.genruntimeconfig.cache
