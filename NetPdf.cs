@@ -804,7 +804,7 @@ namespace Tephanik
             this._put("/Parent 1 0 R");
 
             if(this.PageInfo[n].ContainsKey("size"))
-                this._put($"/MediaBox [0 0 {this.PageInfo[n]["size"].Item1:F2} {this.PageInfo[n]["size"][1]:F2}]");
+                this._put($"/MediaBox [0 0 {this.PageInfo[n]["size"].Item1:F2} {this.PageInfo[n]["size"].Item2:F2}]");
             if(this.PageInfo[n].ContainsKey("rotation"))
                 this._put("/Rotate " + (string) this.PageInfo[n]["rotation"]);
             this._put("/Resources 2 0 R");
