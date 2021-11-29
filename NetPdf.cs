@@ -328,16 +328,16 @@ namespace Tephanik
             }
 
             if(this.page > 0)
-                this._out(this.DrawColor);
+                this.Out(this.DrawColor);
         }
 
-        private void _out(string s)
+        private void Out(string s)
         {
             // Add a line to the document
             if(this.state == 2) {
                 this.pages[this.page] += $"{s}\n";
             } else if(this.state ==1 ) {
-                this._put(s);
+                this.Put(s);
             } else if(this.state == 0) {
                 this.Error("No page has been added yet");
             } else if(this.state==3) {
@@ -345,21 +345,21 @@ namespace Tephanik
             }
         }
 
-        private void _put(string s) => this.buffer?.Append($"{s}\n");
+        private void Put(string s) => this.buffer?.Append($"{s}\n");
 
-        private int _getoffset()
+        private int GetOffSet()
         {
             return this.buffer.Length;
         }
 
-        private void _newobj(int? _n = null)
+        private void NewObj(int? _n = null)
         {
             // Begin a new object
             if(_n == null) {
                 _n = ++this.n;
             } 
-            this.offsets[(int) _n] = this._getoffset();
-            this._put($"{_n} 0 obj");
+            this.offsets[(int) _n] = this.GetOffSet();
+            this.Put($"{_n} 0 obj");
         }
 
         public bool AcceptPageBreak()
@@ -388,13 +388,13 @@ namespace Tephanik
                 if(_ws > 0)
                 {
                     this.ws = 0;
-                    this._out("0 Tw");
+                    this.Out("0 Tw");
                 }
                 this.AddPage(this.CurOrientation, this.CurPageSize, this.CurRotation);
                 this.x = _x;
                 if(_ws > 0) {
                     this.ws = _ws;
-                    this._out($"{_ws*_k:F3} Tw");
+                    this.Out($"{_ws*_k:F3} Tw");
                 }
             }
             if(w == 0) {
@@ -445,7 +445,7 @@ namespace Tephanik
                 //     this.Link(this.x+dx,this.y+.5*h-.5*this.FontSize,this.GetStringWidth(txt),this.FontSize,link);
             }
             if(! string.IsNullOrEmpty(s)) {
-                this._out(s);
+                this.Out(s);
             }
             this.lasth = h;
             if(ln > 0)
@@ -504,25 +504,25 @@ namespace Tephanik
                 this.Footer();
                 this.InFooter = false;
                 // Close page
-                this._endpage();
+                this.EndPage();
             }
             // Start new page
-            this._beginpage(orientation, size, rotation);
+            this.BeginPage(orientation, size, rotation);
             // Set line cap style to square
-            this._out("2 J");
+            this.Out("2 J");
             // Set line width
             this.LineWidth = lw;
-            this._out($"{lw*this.k:F2} w");
+            this.Out($"{lw*this.k:F2} w");
             // Set font
             if(! string.IsNullOrEmpty(family))
                 this.SetFont(family, style, fontsize);
             // Set colors
             this.DrawColor = dc;
             if(dc != "0 G")
-                this._out(dc);
+                this.Out(dc);
             this.FillColor = fc;
             if(fc != "0 g")
-                this._out(fc);
+                this.Out(fc);
             this.TextColor = tc;
             this.ColorFlag = cf;
             // Page header
@@ -533,7 +533,7 @@ namespace Tephanik
             if(this.LineWidth != lw)
             {
                 this.LineWidth = lw;
-                this._out($"{lw * this.k:F2} w");
+                this.Out($"{lw * this.k:F2} w");
             }
             // Restore font
             if(! string.IsNullOrEmpty(family))
@@ -542,12 +542,12 @@ namespace Tephanik
             if(this.DrawColor!=dc)
             {
                 this.DrawColor = dc;
-                this._out(dc);
+                this.Out(dc);
             }
             if(this.FillColor!=fc)
             {
                 this.FillColor = fc;
-                this._out(fc);
+                this.Out(fc);
             }
             this.TextColor = tc;
             this.ColorFlag = cf;
@@ -569,12 +569,12 @@ namespace Tephanik
             return this.page;
         }
 
-        protected void _endpage()
+        protected void EndPage()
         {
             this.state = 1;
         }
 
-        protected void _beginpage(string orientation, dynamic size, double rotation)
+        protected void BeginPage(string orientation, dynamic size, double rotation)
         {
             this.page++;
             this.pages[this.page] = "";
@@ -683,7 +683,7 @@ namespace Tephanik
             this.FontSize = size/this.k;
             this.CurrentFont = this.fonts[fontkey];
             if( this.page > 0)
-                this._out($"BT /F{this.CurrentFont.i} {this.FontSizePt:F2} Tf ET");
+                this.Out($"BT /F{this.CurrentFont.i} {this.FontSizePt:F2} Tf ET");
         }
 
         public void SetTextColor(double r, double? g = null, double? b = null)
@@ -792,22 +792,22 @@ namespace Tephanik
             this.Footer();
             this.InFooter = false;
             // Close page
-            this._endpage();
+            this.EndPage();
             // Close document
-            this._enddoc();
+            this.EndDoc();
         }
 
-        protected void _putpage(int n)
+        protected void PutPage(int n)
         {
-            this._newobj();
-            this._put("<</Type /Page");
-            this._put("/Parent 1 0 R");
+            this.NewObj();
+            this.Put("<</Type /Page");
+            this.Put("/Parent 1 0 R");
 
             if(this.PageInfo[n].ContainsKey("size"))
-                this._put($"/MediaBox [0 0 {this.PageInfo[n]["size"].Item1:F2} {this.PageInfo[n]["size"].Item2:F2}]");
+                this.Put($"/MediaBox [0 0 {this.PageInfo[n]["size"].Item1:F2} {this.PageInfo[n]["size"].Item2:F2}]");
             if(this.PageInfo[n].ContainsKey("rotation"))
-                this._put("/Rotate " + (string) this.PageInfo[n]["rotation"]);
-            this._put("/Resources 2 0 R");
+                this.Put("/Rotate " + (string) this.PageInfo[n]["rotation"]);
+            this.Put("/Resources 2 0 R");
             // if(isset(this.PageLinks[n]))
             // {
             //     // Links
@@ -817,7 +817,7 @@ namespace Tephanik
             //         $rect = sprintf("%.2F %.2F %.2F %.2F",$pl[0],$pl[1],$pl[0]+$pl[2],$pl[1]-$pl[3]);
             //         $annots += "<</Type /Annot /Subtype /Link /Rect [".$rect."] /Border [0 0 0] ";
             //         if(is_string($pl[4]))
-            //             $annots += "/A <</S /URI /URI ".this._textstring($pl[4]).">>>>";
+            //             $annots += "/A <</S /URI /URI ".this.TextString($pl[4]).">>>>";
             //         else
             //         {
             //             $l = this.links[$pl[4]];
@@ -828,33 +828,33 @@ namespace Tephanik
             //             $annots += sprintf("/Dest [%d 0 R /XYZ 0 %.2F null]>>",this.PageInfo[$l[0]]["n"],$h-$l[1]*this.k);
             //         }
             //     }
-            //     this._put($annots."]");
+            //     this.Put($annots."]");
             // }
             if(this.WithAlpha)
-                this._put("/Group <</Type /Group /S /Transparency /CS /DeviceRGB>>");
-            this._put($"/Contents {this.n+1} 0 R>>");
-            this._put("endobj");
+                this.Put("/Group <</Type /Group /S /Transparency /CS /DeviceRGB>>");
+            this.Put($"/Contents {this.n+1} 0 R>>");
+            this.Put("endobj");
             // Page content
             if(! string.IsNullOrEmpty(this.AliasNbPages))
                 this.pages[n] = this.pages[n].Replace(this.AliasNbPages, $"{this.page}");
-            this._putstreamobject(this.pages[n]);
+            this.PutStreamObject(this.pages[n]);
         }
 
-        protected void _putpages()
+        protected void PutPages()
         {
             var nb = this.page;
             for(var _n = 1; _n <= nb; _n++)
                 this.PageInfo[_n]["n"] = this.n+1+2*(_n-1);
             for(var n = 1; n <= nb; n++)
-                this._putpage(n);
+                this.PutPage(n);
             // Pages root
-            this._newobj(1);
-            this._put("<</Type /Pages");
+            this.NewObj(1);
+            this.Put("<</Type /Pages");
             var kids = "/Kids [";
             for(var _n=1; _n<= nb; _n++)
                 kids += this.PageInfo[_n]["n"] + " 0 R ";
-            this._put(kids + "]");
-            this._put("/Count " + nb);
+            this.Put(kids + "]");
+            this.Put("/Count " + nb);
             if(this.DefOrientation=="P")
             {
                 var w = this.DefPageSize.Item1;
@@ -865,100 +865,101 @@ namespace Tephanik
                 var w = this.DefPageSize.Item2;
                 var h = this.DefPageSize.Item1;
             }
-            this._put($"/MediaBox [0 0 {w*this.k:F2} {h*this.k:F2}]");
-            this._put(">>");
-            this._put("endobj");
+            this.Put($"/MediaBox [0 0 {w*this.k:F2} {h*this.k:F2}]");
+            this.Put(">>");
+            this.Put("endobj");
         }
 
-        protected void _putheader()
+        protected void PutHeader()
         {
-            this._put("%PDF-" + this.PDFVersion);
+            this.Put("%PDF-" + this.PDFVersion);
         }
 
-        protected void _puttrailer()
+        protected void PutTrailer()
         {
-            this._put("/Size " + (this.n+1));
-            this._put("/Root " + this.n + " 0 R");
-            this._put("/Info " + (this.n-1) + " 0 R");
+            this.Put("/Size " + (this.n+1));
+            this.Put("/Root " + this.n + " 0 R");
+            this.Put("/Info " + (this.n-1) + " 0 R");
         }
 
-        protected void _enddoc()
+        protected void EndDoc()
         {
-            this._putheader();
-            this._putpages();
-            this._putresources();
+            this.PutHeader();
+            this.PutPages();
+            this.PutResources();
             // Info
-            this._newobj();
-            this._put("<<");
-            this._putinfo();
-            this._put(">>");
-            this._put("endobj");
+            this.NewObj();
+            this.Put("<<");
+            this.PutInfo();
+            this.Put(">>");
+            this.Put("endobj");
             // Catalog
-            this._newobj();
-            this._put("<<");
-            this._putcatalog();
-            this._put(">>");
-            this._put("endobj");
+            this.NewObj();
+            this.Put("<<");
+            this.PutCatalog();
+            this.Put(">>");
+            this.Put("endobj");
             // Cross-ref
-            var offset = this._getoffset();
-            this._put("xref");
-            this._put("0 " + (this.n + 1));
-            this._put("0000000000 65535 f ");
+            var offset = this.GetOffSet();
+            this.Put("xref");
+            this.Put("0 " + (this.n + 1));
+            this.Put("0000000000 65535 f ");
             for(var i = 1; i <= this.n; i++)
-                this._put($"{this.offsets[i]:D10} 00000 n ");
+                this.Put($"{this.offsets[i]:D10} 00000 n ");
             // Trailer
-            this._put("trailer");
-            this._put("<<");
-            this._puttrailer();
-            this._put(">>");
-            this._put("startxref");
-            this._put(offset.ToString());
-            this._put("%%EOF");
+            this.Put("trailer");
+            this.Put("<<");
+            this.PutTrailer();
+            this.Put(">>");
+            this.Put("startxref");
+            this.Put(offset.ToString());
+            this.Put("%%EOF");
             this.state = 3;
         }
 
-        protected void _putxobjectdict()
+        protected void PutXObjectDict()
         {
             // TODO: Implement this
             // foreach(var image in this.images)
-            //     this._put("/I" + image["i"] + " " + image["n"] + " 0 R");
+            //     this.Put("/I" + image["i"] + " " + image["n"] + " 0 R");
         }
 
-        protected void _putresourcedict()
+        protected void PutResourceDict()
         {
-            this._put("/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]");
-            this._put("/Font <<");
+            this.Put("/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]");
+            this.Put("/Font <<");
             foreach(var font in this.fonts) {
                 var f = font.Value;
-                this._put("/F" + f.i + " " + f.n + " 0 R");
+                this.Put("/F" + f.i + " " + f.n + " 0 R");
             }
-            this._put(">>");
-            this._put("/XObject <<");
-            this._putxobjectdict();
-            this._put(">>");
+            this.Put(">>");
+            this.Put("/XObject <<");
+            this.PutXObjectDict();
+            this.Put(">>");
         }
 
-        protected void _putresources()
+        protected void PutResources()
         {
-            this._putfonts();
+            this.PutFonts();
+            // TODO: Implement this
             // this._putimages();
             // Resource dictionary
-            this._newobj(2);
-            this._put("<<");
-            this._putresourcedict();
-            this._put(">>");
-            this._put("endobj");
+            this.NewObj(2);
+            this.Put("<<");
+            this.PutResourceDict();
+            this.Put(">>");
+            this.Put("endobj");
         }
 
-        protected void _putinfo()
+        protected void PutInfo()
         {
             this.metadata["Producer"] = "NetPdf " + this.NetPdfVersion;
             this.metadata["CreationDate"] = $"D:{DateTime.Now:yyyyMMddHmmss}";
             foreach(var (key, value) in this.metadata)
-                this._put("/"+ key + " "+ this._textstring(value));
+                this.Put("/"+ key + " "+ this.TextString(value));
         }
 
-        protected string _textstring(string s)
+        protected string TextString(string s)
         {
             // Format a text string
             // if(!this._isascii($s))
@@ -967,12 +968,12 @@ namespace Tephanik
             return $"({s})";
         }
 
-        protected void _putfonts()
+        protected void PutFonts()
         {
             // foreach(this.FontFiles as $file=>$info)
             // {
             //     // Font file embedding
-            //     this._newobj();
+            //     this.NewObj();
             //     this.FontFiles[$file]["n"] = this.n;
             //     $font = file_get_contents(this.fontpath.$file,true);
             //     if(!$font)
@@ -980,15 +981,15 @@ namespace Tephanik
             //     $compressed = (substr($file,-2)==".z");
             //     if(!$compressed && isset($info["length2"]))
             //         $font = substr($font,6,$info["length1"]).substr($font,6+$info["length1"]+6,$info["length2"]);
-            //     this._put("<</Length ".strlen($font));
+            //     this.Put("<</Length ".strlen($font));
             //     if($compressed)
-            //         this._put("/Filter /FlateDecode");
-            //     this._put("/Length1 ".$info["length1"]);
+            //         this.Put("/Filter /FlateDecode");
+            //     this.Put("/Length1 ".$info["length1"]);
             //     if(isset($info["length2"]))
-            //         this._put("/Length2 ".$info["length2"]." /Length3 0");
-            //     this._put(">>");
-            //     this._putstream($font);
-            //     this._put("endobj");
+            //         this.Put("/Length2 ".$info["length2"]." /Length3 0");
+            //     this.Put(">>");
+            //     this.PutStream($font);
+            //     this.Put("endobj");
             // }
             foreach(var f in this.fonts)
             {
@@ -999,9 +1000,9 @@ namespace Tephanik
                 // {
                 //     if(!isset(this.encodings[$font["enc"]]))
                 //     {
-                //         this._newobj();
-                //         this._put("<</Type /Encoding /BaseEncoding /WinAnsiEncoding /Differences [".$font["diff"]."]>>");
-                //         this._put("endobj");
+                //         this.NewObj();
+                //         this.Put("<</Type /Encoding /BaseEncoding /WinAnsiEncoding /Differences [".$font["diff"]."]>>");
+                //         this.Put("endobj");
                 //         this.encodings[$font["enc"]] = this.n;
                 //     }
                 // }
@@ -1011,8 +1012,8 @@ namespace Tephanik
                     
                 if(! this.cmaps.ContainsKey(cmapkey))
                 {
-                    var cmap = this._tounicodecmap(font.uv);
-                    this._putstreamobject(cmap);
+                    var cmap = this.ToUnicodeCmap(font.uv);
+                    this.PutStreamObject(cmap);
                     this.cmaps[cmapkey] = this.n;
                 }
                 
@@ -1025,52 +1026,52 @@ namespace Tephanik
                 if(type == "Core")
                 {
                     // Core font
-                    this._newobj();
-                    this._put("<</Type /Font");
-                    this._put("/BaseFont /" + name);
-                    this._put("/Subtype /Type1");
+                    this.NewObj();
+                    this.Put("<</Type /Font");
+                    this.Put("/BaseFont /" + name);
+                    this.Put("/Subtype /Type1");
                     if(name != "Symbol" && name != "ZapfDingbats")
-                        this._put("/Encoding /WinAnsiEncoding");
+                        this.Put("/Encoding /WinAnsiEncoding");
                     // if(isset($font["uv"]))
-                        this._put("/ToUnicode " + this.cmaps[cmapkey] + " 0 R");
-                    this._put(">>");
-                    this._put("endobj");
+                        this.Put("/ToUnicode " + this.cmaps[cmapkey] + " 0 R");
+                    this.Put(">>");
+                    this.Put("endobj");
                 }
                 // else if($type=="Type1" || $type=="TrueType")
                 // {
                 //     // Additional Type1 or TrueType/OpenType font
-                //     this._newobj();
-                //     this._put("<</Type /Font");
-                //     this._put("/BaseFont /".$name);
-                //     this._put("/Subtype /".$type);
-                //     this._put("/FirstChar 32 /LastChar 255");
-                //     this._put("/Widths ".(this.n+1)." 0 R");
-                //     this._put("/FontDescriptor ".(this.n+2)." 0 R");
+                //     this.NewObj();
+                //     this.Put("<</Type /Font");
+                //     this.Put("/BaseFont /".$name);
+                //     this.Put("/Subtype /".$type);
+                //     this.Put("/FirstChar 32 /LastChar 255");
+                //     this.Put("/Widths ".(this.n+1)." 0 R");
+                //     this.Put("/FontDescriptor ".(this.n+2)." 0 R");
                 //     if(isset($font["diff"]))
-                //         this._put("/Encoding ".this.encodings[$font["enc"]]." 0 R");
+                //         this.Put("/Encoding ".this.encodings[$font["enc"]]." 0 R");
                 //     else
-                //         this._put("/Encoding /WinAnsiEncoding");
+                //         this.Put("/Encoding /WinAnsiEncoding");
                 //     if(isset($font["uv"]))
-                //         this._put("/ToUnicode ".this.cmaps[$cmapkey]." 0 R");
-                //     this._put(">>");
-                //     this._put("endobj");
+                //         this.Put("/ToUnicode ".this.cmaps[$cmapkey]." 0 R");
+                //     this.Put(">>");
+                //     this.Put("endobj");
                 //     // Widths
-                //     this._newobj();
+                //     this.NewObj();
                 //     $cw = &$font["cw"];
                 //     $s = "[";
                 //     for($i=32;$i<=255;$i++)
                 //         $s += $cw[chr($i)]." ";
-                //     this._put($s."]");
-                //     this._put("endobj");
+                //     this.Put($s."]");
+                //     this.Put("endobj");
                 //     // Descriptor
-                //     this._newobj();
+                //     this.NewObj();
                 //     $s = "<</Type /FontDescriptor /FontName /".$name;
                 //     foreach($font["desc"] as $k=>$v)
                 //         $s += " /".$k." ".$v;
                 //     if(!empty($font["file"]))
                 //         $s += " /FontFile".($type=="Type1" ? "" : "2")." ".this.FontFiles[$font["file"]]["n"]." 0 R";
-                //     this._put($s.">>");
-                //     this._put("endobj");
+                //     this.Put($s.">>");
+                //     this.Put("endobj");
                 // }
                 // else
                 // {
@@ -1082,45 +1083,45 @@ namespace Tephanik
                 // }
             }
         }
-        protected void _putcatalog()
+        protected void PutCatalog()
         {
             var n = this.PageInfo[1]["n"];
-            this._put("/Type /Catalog");
-            this._put("/Pages 1 0 R");
+            this.Put("/Type /Catalog");
+            this.Put("/Pages 1 0 R");
             if(this.ZoomMode == "fullpage")
-                this._put($"/OpenAction [{n} 0 R /Fit]");
+                this.Put($"/OpenAction [{n} 0 R /Fit]");
             else if(this.ZoomMode == "fullwidth")
-                this._put($"/OpenAction [{n} 0 R /FitH null]");
+                this.Put($"/OpenAction [{n} 0 R /FitH null]");
             else if(this.ZoomMode=="real")
-                this._put($"/OpenAction [{n} 0 R /XYZ null null 1]");
+                this.Put($"/OpenAction [{n} 0 R /XYZ null null 1]");
             // else if(!is_string(this.ZoomMode))
-            //     this._put($"/OpenAction [{n} 0 R /XYZ null null {this.ZoomMode/100:F2}]");
+            //     this.Put($"/OpenAction [{n} 0 R /XYZ null null {this.ZoomMode/100:F2}]");
             if(this.LayoutMode=="single")
-                this._put("/PageLayout /SinglePage");
+                this.Put("/PageLayout /SinglePage");
             else if(this.LayoutMode=="continuous")
-                this._put("/PageLayout /OneColumn");
+                this.Put("/PageLayout /OneColumn");
             else if(this.LayoutMode=="two")
-                this._put("/PageLayout /TwoColumnLeft");
+                this.Put("/PageLayout /TwoColumnLeft");
         }
 
-        protected void _putstream(string data)
+        protected void PutStream(string data)
         {
-            this._put("stream");
-            this._put(data);
-            this._put("endstream");
+            this.Put("stream");
+            this.Put(data);
+            this.Put("endstream");
         }
 
-        protected void _putstreamobject(string data)
+        protected void PutStreamObject(string data)
         {
             var entries = "";
             entries += "/Length " + data.Length;
-            this._newobj();
-            this._put("<<" + entries + ">>");
-            this._putstream(data);
-            this._put("endobj");
+            this.NewObj();
+            this.Put("<<" + entries + ">>");
+            this.PutStream(data);
+            this.Put("endobj");
         }
 
-        protected string _tounicodecmap(List<(int, dynamic)> uv)
+        protected string ToUnicodeCmap(List<(int, dynamic)> uv)
         {
             var ranges = "";
             var nbr = 0;
@@ -1141,6 +1142,7 @@ namespace Tephanik
                     nbc++;
                 }
             }
+            
             var s = "/CIDInit /ProcSet findresource begin\n";
             s += "12 dict begin\n";
             s += "begincmap\n";
