@@ -12,6 +12,7 @@ namespace Tephanik
         public List<(int, dynamic)> uv { get; set; }
 
         public double? i { get; set; }
+        public double? n { get; set; }
 
         public static Font GetDefaultFont() {
             return new Font {

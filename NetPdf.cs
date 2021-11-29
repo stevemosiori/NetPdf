@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Reflection;
 using System.Text;
 
@@ -7,9 +8,10 @@ namespace Tephanik
     {
         private int page;               // current page number
         private int n;                  // current object number
-        private List<int>? offsets;            // array of object offsets
+        private int[] offsets;            // array of object offsets
         private StringBuilder buffer;             // buffer holding in-memory PDF
-        private List<string> pages;              // array containing pages
+        private string[] pages;              // array containing pages
+        // private List<string> pages;              // array containing pages
         private int state;              // current document state
         private bool compress;           // compression flag
         private double k;                  // scale factor (number of points in user unit)
@@ -19,7 +21,8 @@ namespace Tephanik
         private (double, double) DefPageSize;        // default page size
         private (double, double) CurPageSize;        // current page size
         private double CurRotation;        // current page rotation
-        private List<dynamic> PageInfo;           // page-related data
+        private Dictionary<string, dynamic>[] PageInfo;           // page-related data
+        // private List<dynamic> PageInfo;           // page-related data
         private double wPt, hPt;          // dimensions of current page in points
         private double w, h;              // dimensions of current page in user unit
         private double lMargin;            // left margin
@@ -35,7 +38,7 @@ namespace Tephanik
         private Dictionary<string, Font> fonts;              // array of used fonts
         private object? FontFiles;          // array of font files
         private object? encodings;          // array of encodings
-        private object? cmaps;              // array of ToUnicode CMaps
+        private Dictionary<string, int> cmaps;              // array of ToUnicode CMaps
         private string FontFamily;         // current font family
         private string FontStyle;          // current font style
         private bool underline;          // underlining flag
@@ -60,7 +63,7 @@ namespace Tephanik
         private string? LayoutMode;         // layout display mode
         private Dictionary<string, dynamic> metadata;           // document properties
         private string PDFVersion;         // PDF version number
-
+        private string NetPdfVersion = "1.0";
         public NetPdf(string orientation="P", string unit="mm", string inputSize="A4")
         {
             // Some checks
@@ -70,14 +73,19 @@ namespace Tephanik
             this.page = 0;
             this.n = 2;
             this.buffer = new StringBuilder();
-            this.pages = new();
-            this.PageInfo = new();
+            this.pages = new string[1000];
+            this.PageInfo = new Dictionary<string, dynamic>[1000];
+            for (var i = 0; i < this.PageInfo.Count(); i++)
+            {
+                this.PageInfo[i] = new Dictionary<string, dynamic>();
+            }
             this.fonts =   new();
             this.FontFiles = new();
             this.encodings = new();
             this.cmaps = new();
             this.images = new();
             this.links = new();
+            this.offsets = new int[1000];
             this.InHeader = false;
             this.InFooter = false;
             this.lasth = 0.0;
@@ -92,14 +100,14 @@ namespace Tephanik
             this.WithAlpha = false;
             this.ws = 0;
             // Font path
-            // if(defined('FPDF_FONTPATH'))
+            // if(defined("FPDF_FONTPATH"))
             // {
             //     this.fontpath = FPDF_FONTPATH;
-            //     if(substr(this.fontpath,-1)!='/' && substr(this.fontpath,-1)!='\\')
-            //         this.fontpath .= '/';
+            //     if(substr(this.fontpath,-1)!="/" && substr(this.fontpath,-1)!="\\")
+            //         this.fontpath .= "/";
             // }
-            // else if(is_dir(dirname(__FILE__).'/font'))
-            //     this.fontpath = dirname(__FILE__).'/font/';
+            // else if(is_dir(dirname(__FILE__)."/font"))
+            //     this.fontpath = dirname(__FILE__)."/font/";
             // else
             this.fontpath = "";
             // Core fonts
@@ -169,6 +177,9 @@ namespace Tephanik
             this.PDFVersion = "1.3";
 
             this.metadata = new();
+
+            // TODO: fix
+            this.AddFont("Helvetica", "I");
         }
 
         private (double, double) GetPageSize(dynamic size)
@@ -257,7 +268,7 @@ namespace Tephanik
         public void SetCompression(bool compress)
         {
             // Set page compression
-            // if(function_exists('gzcompress'))
+            // if(function_exists("gzcompress"))
             //     this.compress = $compress;
             // else
             //     this.compress = false;
@@ -351,13 +362,6 @@ namespace Tephanik
             this._put($"{n} 0 obj");
         }
 
-        private void _putstream(string data)
-        {
-            this._put("stream");
-            this._put(data);
-            this._put("endstream");
-        }
-
         public bool AcceptPageBreak()
         {
             // Accept automatic page break or not
@@ -375,82 +379,109 @@ namespace Tephanik
             string link=""
         ) {
             // Output a cell
-            double k = this.k;
+            double _k = this.k;
             if(this.y + h > this.PageBreakTrigger && !this.InHeader && !this.InFooter && this.AcceptPageBreak())
             {
                 // Automatic page break
-                double x = this.x;
-                double ws = this.ws;
-                if(ws > 0)
+                double _x = this.x;
+                double _ws = this.ws;
+                if(_ws > 0)
                 {
                     this.ws = 0;
                     this._out("0 Tw");
                 }
                 this.AddPage(this.CurOrientation, this.CurPageSize, this.CurRotation);
-                this.x = x;
-                if(ws>0)
-                {
-                    this.ws = ws;
-                    this._out($"{ws*k:F3} Tw");
+                this.x = _x;
+                if(_ws > 0) {
+                    this.ws = _ws;
+                    this._out($"{_ws*_k:F3} Tw");
                 }
             }
-            if(w==0)
-                w = this.w-this.rMargin-this.x;
+            if(w == 0) {
+                w = this.w - this.rMargin - this.x;
+            }
             var s = "";
             var op = "";
-            if(fill || border==1)
-            {
+            if(fill || border==1) {
                 if(fill) {
                     op = (border==1) ? "B" : "f";
-                } else
+                } else {
                     op = "S";
-                s = $"{this.x*k:F2} {(this.h-this.y)*k:F2} %.2F %.2F re %s " ,,w*k,-h*k,op);
+                }
+                s = $"{this.x*_k:F2} {(this.h-this.y)*_k:F2} {w*k:F2} {-h*k:F2} re {op} ";
             }
-            if(is_string(border))
+            // if(border is string)
+            // {
+            //     double _x = this.x;
+            //     double _y = this.y;
+            //     if(strpos(border,"L")!==false)
+            //         s += sprintf("%.2F %.2F m %.2F %.2F l S ",x*k,(this.h-y)*k,x*k,(this.h-(y+h))*k);
+            //     if(strpos(border,"T")!==false)
+            //         s += sprintf("%.2F %.2F m %.2F %.2F l S ",x*k,(this.h-y)*k,(x+w)*k,(this.h-y)*k);
+            //     if(strpos(border,"R")!==false)
+            //         s += sprintf("%.2F %.2F m %.2F %.2F l S ",(x+w)*k,(this.h-y)*k,(x+w)*k,(this.h-(y+h))*k);
+            //     if(strpos(border,"B")!==false)
+            //         s += sprintf("%.2F %.2F m %.2F %.2F l S ",x*k,(this.h-(y+h))*k,(x+w)*k,(this.h-(y+h))*k);
+            // }
+            if(! string.IsNullOrEmpty(txt))
             {
-                x = this.x;
-                y = this.y;
-                if(strpos(border,'L')!==false)
-                    s .= sprintf('%.2F %.2F m %.2F %.2F l S ',x*k,(this.h-y)*k,x*k,(this.h-(y+h))*k);
-                if(strpos(border,'T')!==false)
-                    s .= sprintf('%.2F %.2F m %.2F %.2F l S ',x*k,(this.h-y)*k,(x+w)*k,(this.h-y)*k);
-                if(strpos(border,'R')!==false)
-                    s .= sprintf('%.2F %.2F m %.2F %.2F l S ',(x+w)*k,(this.h-y)*k,(x+w)*k,(this.h-(y+h))*k);
-                if(strpos(border,'B')!==false)
-                    s .= sprintf('%.2F %.2F m %.2F %.2F l S ',x*k,(this.h-(y+h))*k,(x+w)*k,(this.h-(y+h))*k);
-            }
-            if(txt!=='')
-            {
-                if(!isset(this.CurrentFont))
-                    this.Error('No font has been set');
-                if(align=='R')
-                    dx = w-this.cMargin-this.GetStringWidth(txt);
-                else if(align=='C')
+                double? dx = null;
+                if(this.CurrentFont.GetType() != typeof(Font))
+                    this.Error("No font has been set");
+                if(align == "R")
+                    dx = w - this.cMargin-this.GetStringWidth(txt);
+                else if(align == "C")
                     dx = (w-this.GetStringWidth(txt))/2;
                 else
                     dx = this.cMargin;
                 if(this.ColorFlag)
-                    s .= 'q '.this.TextColor.' ';
-                s .= sprintf('BT %.2F %.2F Td (%s) Tj ET',(this.x+dx)*k,(this.h-(this.y+.5*h+.3*this.FontSize))*k,this._escape(txt));
-                if(this.underline)
-                    s .= ' '.this._dounderline(this.x+dx,this.y+.5*h+.3*this.FontSize,txt);
+                    s += "q " + this.TextColor + " ";
+                s += $"BT {(this.x+dx)*k:F2} {(this.h-(this.y+.5*h+.3*this.FontSize))*k:F2} Td ({this._escape(txt)}) Tj ET";
+                // if(this.underline)
+                //     s += " " . this._dounderline(this.x+dx,this.y+.5*h+.3*this.FontSize,txt);
                 if(this.ColorFlag)
-                    s .= ' Q';
-                if(link)
-                    this.Link(this.x+dx,this.y+.5*h-.5*this.FontSize,this.GetStringWidth(txt),this.FontSize,link);
+                    s += " Q";
+                // if(link)
+                //     this.Link(this.x+dx,this.y+.5*h-.5*this.FontSize,this.GetStringWidth(txt),this.FontSize,link);
             }
-            if(s)
+            if(! string.IsNullOrEmpty(s)) {
                 this._out(s);
+            }
             this.lasth = h;
-            if(ln>0)
+            if(ln > 0)
             {
                 // Go to next line
                 this.y += h;
-                if(ln==1)
+                if(ln == 1)
                     this.x = this.lMargin;
             }
             else
                 this.x += w;
+        }
+
+        private string _escape(string s)
+        {
+            // Escape special characters
+            s = s.Replace("\\","\\\\");
+            s = s.Replace("(","\\(");
+            s = s.Replace(")","\\)");
+            s = s.Replace("\r","\\r");
+            s = s.Replace("\n","\\n");
+            s = s.Replace("\t","\\t");
+            return s;
+        }
+
+        private double GetStringWidth(string s)
+        {
+            // Get width of a string in the current font
+            var cw = this.CurrentFont.cw;
+            var w = 0;
+            var l = s.Length;
+            for(var i = 0; i < l; i++) {
+                w += cw.Where(x => x.Item1 == s[i]).FirstOrDefault().Item2;
+            }
+
+            return w*this.FontSize/1000;
         }
 
         public void AddPage(string orientation="", dynamic? size = null, double rotation=0)
@@ -562,7 +593,7 @@ namespace Tephanik
             else
                 _size = this.GetPageSize(size);
             if(
-                   orientation != thi.CurOrientation 
+                   orientation != this.CurOrientation 
                 || _size.Item1 != this.CurPageSize.Item1 
                 || _size.Item2 != this.CurPageSize.Item2
             )
@@ -581,7 +612,7 @@ namespace Tephanik
                 this.wPt = this.w*this.k;
                 this.hPt = this.h*this.k;
                 this.PageBreakTrigger = this.h - this.bMargin;
-                thi.CurOrientation = orientation;
+                this.CurOrientation = orientation;
                 this.CurPageSize = _size;
             }
             if(
@@ -628,7 +659,7 @@ namespace Tephanik
             )
                 return;
             // Test if font is already loaded
-            var fontkey = $"{family}{style}";
+            var fontkey = $"{family}{style}".ToLower();
             if(! this.fonts.ContainsKey(fontkey))
             {
                 // Test if one of the core fonts
@@ -638,7 +669,7 @@ namespace Tephanik
                 {
                     if(family=="symbol" || family=="zapfdingbats")
                         style = "";
-                    fontkey = $"{family}{style}";
+                    fontkey = $"{family}{style}".ToLower();
                     if(! this.fonts.ContainsKey(fontkey))
                         this.AddFont(family, style);
                 }
@@ -655,6 +686,16 @@ namespace Tephanik
                 this._out($"BT /F{this.CurrentFont.i} {this.FontSizePt:F2} Tf ET");
         }
 
+        public void SetTextColor(double r, double? g = null, double? b = null)
+        {
+            // Set color for text
+            if((r == 0 && g== 0 && b == 0) || g == null)
+                this.TextColor = $"{r/255:F3} g";
+            else
+                this.TextColor = $"{r/255:F3} {g/255:F3} {b/255:F3} rg";
+            this.ColorFlag = (this.FillColor != this.TextColor);
+        }
+
         public void AddFont(string family, string style = "")
         {
             // Add a TrueType, OpenType or Type1 font
@@ -663,14 +704,473 @@ namespace Tephanik
             if(style == "IB")
                 style = "BI";
             
-            var fontkey = $"{family}{style}";
-            if(!this.fonts.ContainsKey(fontkey))
-                return;
+            var fontkey = $"{family}{style}".ToLower();
+            // if(!this.fonts.ContainsKey(fontkey))
+            //     return;
 
             Font font = Font.GetDefaultFont();
             font.i = this.fonts.Count + 1;
             
             this.fonts[fontkey] = font;
+        }
+
+        public void Output(string dest = "", string name = "", bool isUTF8 = false)
+        {
+            // Output PDF to some destination
+            this.Close();
+            if(name.Length == 1 && dest.Length != 1)
+            {
+                // Fix parameter order
+                var tmp = dest;
+                dest = name;
+                name = tmp;
+            }
+            if(dest == "")
+                dest = "I";
+            if(name == "")
+                name = "doc.pdf";
+            switch(dest.ToUpper())
+            {
+                case "I":
+                    // Send to standard output
+                    // this._checkoutput();
+                    // if(PHP_SAPI!="cli")
+                    // {
+                    //     // We send to a browser
+                    //     header("Content-Type: application/pdf");
+                    //     header("Content-Disposition: inline; ".this._httpencode("filename",$name,$isUTF8));
+                    //     header("Cache-Control: private, max-age=0, must-revalidate");
+                    //     header("Pragma: public");
+                    // }
+                    // echo this.buffer;
+                    break;
+                case "D":
+                    // Download file
+                    // this._checkoutput();
+                    // header("Content-Type: application/x-download");
+                    // header("Content-Disposition: attachment; ".this._httpencode("filename",$name,$isUTF8));
+                    // header("Cache-Control: private, max-age=0, must-revalidate");
+                    // header("Pragma: public");
+                    // echo this.buffer;
+                    break;
+                case "F":
+                    // Save to local file
+                    try
+                    {
+                        var myByteArray = System.Text.Encoding.UTF8.GetBytes(this.buffer.ToString());
+                        using(var f = new FileStream(name, FileMode.Create))
+                        {
+                            f.Write(myByteArray, 0, myByteArray.Length);
+                        }
+                        // var ms = new MemoryStream(myByteArray);
+                        // File.WriteAllBytes(name, myByteArray);
+                    }
+                    catch (System.Exception)
+                    {
+                        this.Error("Unable to create output file: " + name);
+                    }
+                    break;
+                case "S":
+                    // Return as a string
+                    // return this.buffer;
+                    break;
+                default:
+                    this.Error("Incorrect output destination: " + dest);
+                    break;
+            }
+        }
+
+        public void Close()
+        {
+            // Terminate document
+            if(this.state == 3)
+                return;
+            if(this.page == 0)
+                this.AddPage();
+            // Page footer
+            this.InFooter = true;
+            this.Footer();
+            this.InFooter = false;
+            // Close page
+            this._endpage();
+            // Close document
+            this._enddoc();
+        }
+
+        protected void _putpage(int n)
+        {
+            this._newobj();
+            this._put("<</Type /Page");
+            this._put("/Parent 1 0 R");
+
+            if(this.PageInfo[n].ContainsKey("size"))
+                this._put($"/MediaBox [0 0 {this.PageInfo[n]["size"].Item1:F2} {this.PageInfo[n]["size"][1]:F2}]");
+            if(this.PageInfo[n].ContainsKey("rotation"))
+                this._put("/Rotate " + (string) this.PageInfo[n]["rotation"]);
+            this._put("/Resources 2 0 R");
+            // if(isset(this.PageLinks[n]))
+            // {
+            //     // Links
+            //     $annots = "/Annots [";
+            //     foreach(this.PageLinks[$n] as $pl)
+            //     {
+            //         $rect = sprintf("%.2F %.2F %.2F %.2F",$pl[0],$pl[1],$pl[0]+$pl[2],$pl[1]-$pl[3]);
+            //         $annots += "<</Type /Annot /Subtype /Link /Rect [".$rect."] /Border [0 0 0] ";
+            //         if(is_string($pl[4]))
+            //             $annots += "/A <</S /URI /URI ".this._textstring($pl[4]).">>>>";
+            //         else
+            //         {
+            //             $l = this.links[$pl[4]];
+            //             if(isset(this.PageInfo[$l[0]]["size"]))
+            //                 $h = this.PageInfo[$l[0]]["size"][1];
+            //             else
+            //                 $h = (this.DefOrientation=="P") ? this.DefPageSize[1]*this.k : this.DefPageSize[0]*this.k;
+            //             $annots += sprintf("/Dest [%d 0 R /XYZ 0 %.2F null]>>",this.PageInfo[$l[0]]["n"],$h-$l[1]*this.k);
+            //         }
+            //     }
+            //     this._put($annots."]");
+            // }
+            if(this.WithAlpha)
+                this._put("/Group <</Type /Group /S /Transparency /CS /DeviceRGB>>");
+            this._put($"/Contents {this.n+1} 0 R>>");
+            this._put("endobj");
+            // Page content
+            if(! string.IsNullOrEmpty(this.AliasNbPages))
+                this.pages[n] = this.pages[n].Replace(this.AliasNbPages, $"{this.page}");
+            this._putstreamobject(this.pages[n]);
+        }
+
+        protected void _putpages()
+        {
+            var nb = this.page;
+            for(var n = 1; n <= nb; n++)
+                this.PageInfo[n]["n"] = this.n+1+2*(n-1);
+            for(n = 1; n <= nb; n++)
+                this._putpage(n);
+            // Pages root
+            this._newobj(1);
+            this._put("<</Type /Pages");
+            var kids = "/Kids [";
+            for(n=1; n<= nb; n++)
+                kids += this.PageInfo[n]["n"] + " 0 R ";
+            this._put(kids + "]");
+            this._put("/Count " + nb);
+            if(this.DefOrientation=="P")
+            {
+                var w = this.DefPageSize.Item1;
+                var h = this.DefPageSize.Item2;
+            }
+            else
+            {
+                var w = this.DefPageSize.Item2;
+                var h = this.DefPageSize.Item1;
+            }
+            this._put($"/MediaBox [0 0 {w*this.k:F2} {h*this.k:F2}]");
+            this._put(">>");
+            this._put("endobj");
+        }
+
+        protected void _putheader()
+        {
+            this._put("%PDF-" + this.PDFVersion);
+        }
+
+        protected void _puttrailer()
+        {
+            this._put("/Size " + (this.n+1));
+            this._put("/Root " + this.n + " 0 R");
+            this._put("/Info " + (this.n-1) + " 0 R");
+        }
+
+        protected void _enddoc()
+        {
+            this._putheader();
+            this._putpages();
+            this._putresources();
+            // Info
+            this._newobj();
+            this._put("<<");
+            this._putinfo();
+            this._put(">>");
+            this._put("endobj");
+            // Catalog
+            this._newobj();
+            this._put("<<");
+            this._putcatalog();
+            this._put(">>");
+            this._put("endobj");
+            // Cross-ref
+            var offset = this._getoffset();
+            this._put("xref");
+            this._put("0 " + (this.n + 1));
+            this._put("0000000000 65535 f ");
+            for(var i = 1; i <= this.n; i++)
+                this._put($"{this.offsets[i]:D10} 00000 n ");
+            // Trailer
+            this._put("trailer");
+            this._put("<<");
+            this._puttrailer();
+            this._put(">>");
+            this._put("startxref");
+            this._put(offset.ToString());
+            this._put("%%EOF");
+            this.state = 3;
+        }
+
+        protected void _putxobjectdict()
+        {
+            // TODO: Implement this
+            // foreach(var image in this.images)
+            //     this._put("/I" + image["i"] + " " + image["n"] + " 0 R");
+        }
+
+        protected void _putresourcedict()
+        {
+            this._put("/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]");
+            this._put("/Font <<");
+            foreach(var font in this.fonts) {
+                var f = font.Value;
+                this._put("/F" + f.i + " " + f.n + " 0 R");
+            }
+            this._put(">>");
+            this._put("/XObject <<");
+            this._putxobjectdict();
+            this._put(">>");
+        }
+
+        protected void _putresources()
+        {
+            this._putfonts();
+            // this._putimages();
+            // Resource dictionary
+            this._newobj(2);
+            this._put("<<");
+            this._putresourcedict();
+            this._put(">>");
+            this._put("endobj");
+        }
+
+        protected void _putinfo()
+        {
+            this.metadata["Producer"] = "NetPdf " + this.NetPdfVersion;
+            this.metadata["CreationDate"] = $"D:{DateTime.Now:yyyyMMddHmmss}";
+            foreach(var (key, value) in this.metadata)
+                this._put("/"+ key + " "+ this._textstring(value));
+        }
+
+        protected string _textstring(string s)
+        {
+            // Format a text string
+            // if(!this._isascii($s))
+            //     $s = this._UTF8toUTF16($s);
+            // return '('.this._escape($s).')';
+            return s;
+        }
+
+        protected void _putfonts()
+        {
+            // foreach(this.FontFiles as $file=>$info)
+            // {
+            //     // Font file embedding
+            //     this._newobj();
+            //     this.FontFiles[$file]["n"] = this.n;
+            //     $font = file_get_contents(this.fontpath.$file,true);
+            //     if(!$font)
+            //         this.Error("Font file not found: ".$file);
+            //     $compressed = (substr($file,-2)==".z");
+            //     if(!$compressed && isset($info["length2"]))
+            //         $font = substr($font,6,$info["length1"]).substr($font,6+$info["length1"]+6,$info["length2"]);
+            //     this._put("<</Length ".strlen($font));
+            //     if($compressed)
+            //         this._put("/Filter /FlateDecode");
+            //     this._put("/Length1 ".$info["length1"]);
+            //     if(isset($info["length2"]))
+            //         this._put("/Length2 ".$info["length2"]." /Length3 0");
+            //     this._put(">>");
+            //     this._putstream($font);
+            //     this._put("endobj");
+            // }
+            foreach(var f in this.fonts)
+            {
+                var font = f.Value;
+                var k = f.Key;
+                // Encoding
+                // if(isset($font["diff"]))
+                // {
+                //     if(!isset(this.encodings[$font["enc"]]))
+                //     {
+                //         this._newobj();
+                //         this._put("<</Type /Encoding /BaseEncoding /WinAnsiEncoding /Differences [".$font["diff"]."]>>");
+                //         this._put("endobj");
+                //         this.encodings[$font["enc"]] = this.n;
+                //     }
+                // }
+                // ToUnicode CMap
+                
+                var cmapkey = font.enc;
+                    
+                if(! this.cmaps.ContainsKey(cmapkey))
+                {
+                    var cmap = this._tounicodecmap(font.uv);
+                    this._putstreamobject(cmap);
+                    this.cmaps[cmapkey] = this.n;
+                }
+                
+                // Font object
+                this.fonts[k].n = this.n+1;
+                var type = font.type;
+                var name = font.name;
+                // if($font["subsetted"])
+                //     $name = "AAAAAA+".$name;
+                if(type == "Core")
+                {
+                    // Core font
+                    this._newobj();
+                    this._put("<</Type /Font");
+                    this._put("/BaseFont /" + name);
+                    this._put("/Subtype /Type1");
+                    if(name != "Symbol" && name != "ZapfDingbats")
+                        this._put("/Encoding /WinAnsiEncoding");
+                    // if(isset($font["uv"]))
+                        this._put("/ToUnicode " + this.cmaps[cmapkey] + " 0 R");
+                    this._put(">>");
+                    this._put("endobj");
+                }
+                // else if($type=="Type1" || $type=="TrueType")
+                // {
+                //     // Additional Type1 or TrueType/OpenType font
+                //     this._newobj();
+                //     this._put("<</Type /Font");
+                //     this._put("/BaseFont /".$name);
+                //     this._put("/Subtype /".$type);
+                //     this._put("/FirstChar 32 /LastChar 255");
+                //     this._put("/Widths ".(this.n+1)." 0 R");
+                //     this._put("/FontDescriptor ".(this.n+2)." 0 R");
+                //     if(isset($font["diff"]))
+                //         this._put("/Encoding ".this.encodings[$font["enc"]]." 0 R");
+                //     else
+                //         this._put("/Encoding /WinAnsiEncoding");
+                //     if(isset($font["uv"]))
+                //         this._put("/ToUnicode ".this.cmaps[$cmapkey]." 0 R");
+                //     this._put(">>");
+                //     this._put("endobj");
+                //     // Widths
+                //     this._newobj();
+                //     $cw = &$font["cw"];
+                //     $s = "[";
+                //     for($i=32;$i<=255;$i++)
+                //         $s += $cw[chr($i)]." ";
+                //     this._put($s."]");
+                //     this._put("endobj");
+                //     // Descriptor
+                //     this._newobj();
+                //     $s = "<</Type /FontDescriptor /FontName /".$name;
+                //     foreach($font["desc"] as $k=>$v)
+                //         $s += " /".$k." ".$v;
+                //     if(!empty($font["file"]))
+                //         $s += " /FontFile".($type=="Type1" ? "" : "2")." ".this.FontFiles[$font["file"]]["n"]." 0 R";
+                //     this._put($s.">>");
+                //     this._put("endobj");
+                // }
+                // else
+                // {
+                //     // Allow for additional types
+                //     $mtd = "_put".strtolower($type);
+                //     if(!method_exists($this,$mtd))
+                //         this.Error("Unsupported font type: ".$type);
+                //     this.$mtd($font);
+                // }
+            }
+        }
+        protected void _putcatalog()
+        {
+            var n = this.PageInfo[1]["n"];
+            this._put("/Type /Catalog");
+            this._put("/Pages 1 0 R");
+            if(this.ZoomMode == "fullpage")
+                this._put($"/OpenAction [{n} 0 R /Fit]");
+            else if(this.ZoomMode == "fullwidth")
+                this._put($"/OpenAction [{n} 0 R /FitH null]");
+            else if(this.ZoomMode=="real")
+                this._put($"/OpenAction [{n} 0 R /XYZ null null 1]");
+            // else if(!is_string(this.ZoomMode))
+            //     this._put($"/OpenAction [{n} 0 R /XYZ null null {this.ZoomMode/100:F2}]");
+            if(this.LayoutMode=="single")
+                this._put("/PageLayout /SinglePage");
+            else if(this.LayoutMode=="continuous")
+                this._put("/PageLayout /OneColumn");
+            else if(this.LayoutMode=="two")
+                this._put("/PageLayout /TwoColumnLeft");
+        }
+
+        protected void _putstream(string data)
+        {
+            this._put("stream");
+            this._put(data);
+            this._put("endstream");
+        }
+
+        protected void _putstreamobject(string data)
+        {
+            var entries = "";
+            entries += "/Length " + data.Length;
+            this._newobj();
+            this._put("<<" + entries + ">>");
+            this._putstream(data);
+            this._put("endobj");
+        }
+
+        protected string _tounicodecmap(List<(int, dynamic)> uv)
+        {
+            var ranges = "";
+            var nbr = 0;
+            var chars = "";
+            var nbc = 0;
+            foreach(var (c, v) in uv)
+            {
+                var v_array = v as IEnumerable; 
+
+                if (v is System.Runtime.CompilerServices.ITuple)
+                {
+                    ranges += $"<{c:X2}> <{c+v.Item2-1:X2}> <{v.Item1:X4}>\n";
+                    nbr++;
+                }
+                else
+                {
+                    chars += $"<{c:X2}> <{v:X4}>\n";
+                    nbc++;
+                }
+            }
+            var s = "/CIDInit /ProcSet findresource begin\n";
+            s += "12 dict begin\n";
+            s += "begincmap\n";
+            s += "/CIDSystemInfo\n";
+            s += "<</Registry (Adobe)\n";
+            s += "/Ordering (UCS)\n";
+            s += "/Supplement 0\n";
+            s += ">> def\n";
+            s += "/CMapName /Adobe-Identity-UCS def\n";
+            s += "/CMapType 2 def\n";
+            s += "1 begincodespacerange\n";
+            s += "<00> <FF>\n";
+            s += "endcodespacerange\n";
+            if(nbr > 0)
+            {
+                s += $"{nbr} beginbfrange\n";
+                s += ranges;
+                s += "endbfrange\n";
+            }
+            if(nbc > 0)
+            {
+                s += $"{nbc} beginbfchar\n";
+                s += chars;
+                s += "endbfchar\n";
+            }
+            s += "endcmap\n";
+            s += "CMapName currentdict /CMap defineresource pop\n";
+            s += "end\n";
+            s += "end";
+            return s;
         }
     }
 }

@@ -2,10 +2,17 @@
 using System.Reflection;
 using Tephanik;
 
-NetPdf n = new();
+NetPdf pdf = new();
 
-Dictionary<string, dynamic> d = new();
-d["age"] = 67;
-d["age"] = 56;
+pdf.AddPage("P", "A4");
 
-Console.WriteLine($"{3/255:F3} G");
+pdf.SetFont("Helvetica", "I", 14);
+pdf.SetTextColor(0, 0, 0);
+pdf.Cell(28, 4.5, "Hello World", 0, 0, "L", false);
+pdf.Output("test.pdf", "F");
+
+// Dictionary<string, dynamic>[] d = new Dictionary<string, dynamic>[2];
+// d["age"] = 67;
+// d["age"] = 56;
+
+// Console.WriteLine($"{12:X3} G");
