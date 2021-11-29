@@ -352,13 +352,13 @@ namespace Tephanik
             return this.buffer.Length;
         }
 
-        private void _newobj(int? n = null)
+        private void _newobj(int? _n = null)
         {
             // Begin a new object
-            if(n == null) {
-                n = ++this.n;
+            if(_n == null) {
+                _n = ++this.n;
             } 
-            this.offsets[(int) n] = this._getoffset();
+            this.offsets[(int) _n] = this._getoffset();
             this._put($"{n} 0 obj");
         }
 
@@ -964,7 +964,7 @@ namespace Tephanik
             // if(!this._isascii($s))
             //     $s = this._UTF8toUTF16($s);
             // return '('.this._escape($s).')';
-            return s;
+            return $"({s})";
         }
 
         protected void _putfonts()
