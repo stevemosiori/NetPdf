@@ -14,7 +14,7 @@ namespace Tephanik
         private bool compress;           // compression flag
         private double k;                  // scale factor (number of points in user unit)
         private string DefOrientation;     // default orientation
-        private string? CurOrientation;     // current orientation
+        private string CurOrientation;     // current orientation
         private dynamic StdPageSizes;       // standard page sizes
         private (double, double) DefPageSize;        // default page size
         private (double, double) CurPageSize;        // current page size
@@ -32,14 +32,14 @@ namespace Tephanik
         private double LineWidth;          // line width in user unit
         private string? fontpath;           // path containing fonts
         private List<string> CoreFonts;          // array of core font names
-        private Dictionary<string, object> fonts;              // array of used fonts
+        private Dictionary<string, Font> fonts;              // array of used fonts
         private object? FontFiles;          // array of font files
         private object? encodings;          // array of encodings
         private object? cmaps;              // array of ToUnicode CMaps
-        private string? FontFamily;         // current font family
-        private object? FontStyle;          // current font style
+        private string FontFamily;         // current font family
+        private string FontStyle;          // current font style
         private bool underline;          // underlining flag
-        private object? CurrentFont;        // current font info
+        private Font CurrentFont;        // current font info
         private double FontSizePt;         // current font size in points
         private double FontSize;           // current font size in user unit
         private string? DrawColor;          // commands for drawing color
@@ -386,24 +386,25 @@ namespace Tephanik
                     this.ws = 0;
                     this._out("0 Tw");
                 }
-                this.AddPage(this.CurOrientation,this.CurPageSize,this.CurRotation);
+                this.AddPage(this.CurOrientation, this.CurPageSize, this.CurRotation);
                 this.x = x;
                 if(ws>0)
                 {
                     this.ws = ws;
-                    this._out(sprintf('%.3F Tw',ws*k));
+                    this._out($"{ws*k:F3} Tw");
                 }
             }
             if(w==0)
                 w = this.w-this.rMargin-this.x;
-            s = '';
+            var s = "";
+            var op = "";
             if(fill || border==1)
             {
-                if(fill)
-                    op = (border==1) ? 'B' : 'f';
-                else
-                    op = 'S';
-                s = sprintf('%.2F %.2F %.2F %.2F re %s ',this.x*k,(this.h-this.y)*k,w*k,-h*k,op);
+                if(fill) {
+                    op = (border==1) ? "B" : "f";
+                } else
+                    op = "S";
+                s = $"{this.x*k:F2} {(this.h-this.y)*k:F2} %.2F %.2F re %s " ,,w*k,-h*k,op);
             }
             if(is_string(border))
             {
@@ -482,7 +483,7 @@ namespace Tephanik
             this.LineWidth = lw;
             this._out($"{lw*this.k:F2} w");
             // Set font
-            if(! (family is null))
+            if(! string.IsNullOrEmpty(family))
                 this.SetFont(family, style, fontsize);
             // Set colors
             this.DrawColor = dc;
@@ -504,7 +505,7 @@ namespace Tephanik
                 this._out($"{lw * this.k:F2} w");
             }
             // Restore font
-            if(family)
+            if(! string.IsNullOrEmpty(family))
                 this.SetFont(family, style, fontsize);
             // Restore colors
             if(this.DrawColor!=dc)
@@ -561,7 +562,7 @@ namespace Tephanik
             else
                 _size = this.GetPageSize(size);
             if(
-                   orientation != this.CurOrientation 
+                   orientation != thi.CurOrientation 
                 || _size.Item1 != this.CurPageSize.Item1 
                 || _size.Item2 != this.CurPageSize.Item2
             )
@@ -580,7 +581,7 @@ namespace Tephanik
                 this.wPt = this.w*this.k;
                 this.hPt = this.h*this.k;
                 this.PageBreakTrigger = this.h - this.bMargin;
-                this.CurOrientation = orientation;
+                thi.CurOrientation = orientation;
                 this.CurPageSize = _size;
             }
             if(
@@ -627,7 +628,7 @@ namespace Tephanik
             )
                 return;
             // Test if font is already loaded
-            var fontkey = family+style;
+            var fontkey = $"{family}{style}";
             if(! this.fonts.ContainsKey(fontkey))
             {
                 // Test if one of the core fonts
@@ -637,7 +638,7 @@ namespace Tephanik
                 {
                     if(family=="symbol" || family=="zapfdingbats")
                         style = "";
-                    fontkey = family+style;
+                    fontkey = $"{family}{style}";
                     if(! this.fonts.ContainsKey(fontkey))
                         this.AddFont(family, style);
                 }
@@ -649,9 +650,27 @@ namespace Tephanik
             this.FontStyle = style;
             this.FontSizePt = size;
             this.FontSize = size/this.k;
-            this.CurrentFont = &this.fonts[$fontkey];
-            if(this.page>0)
-                this._out(sprintf('BT /F%d %.2F Tf ET',this.CurrentFont['i'],this.FontSizePt));
+            this.CurrentFont = this.fonts[fontkey];
+            if( this.page > 0)
+                this._out($"BT /F{this.CurrentFont.i} {this.FontSizePt:F2} Tf ET");
+        }
+
+        public void AddFont(string family, string style = "")
+        {
+            // Add a TrueType, OpenType or Type1 font
+            family = family.ToLower();
+            style = style.ToUpper();
+            if(style == "IB")
+                style = "BI";
+            
+            var fontkey = $"{family}{style}";
+            if(!this.fonts.ContainsKey(fontkey))
+                return;
+
+            Font font = Font.GetDefaultFont();
+            font.i = this.fonts.Count + 1;
+            
+            this.fonts[fontkey] = font;
         }
     }
 }
