@@ -192,7 +192,7 @@ namespace Tephanik
                 }
                 PropertyInfo info = this.StdPageSizes.GetType().GetProperty(size);
                 (double, double) a = info.GetValue(this.StdPageSizes, null);
-                return (a.Item1/this.k, a.Item2/this.k);
+                return (a.Item1 / this.k, a.Item2 / this.k);
             } else {
                 if(size.Item1 > size.Item2)
                     return (size.Item2, size.Item1);
@@ -336,11 +336,11 @@ namespace Tephanik
             // Add a line to the document
             if(this.state == 2) {
                 this.pages[this.page] += $"{s}\n";
-            } else if(this.state ==1 ) {
+            } else if(this.state == 1 ) {
                 this.Put(s);
             } else if(this.state == 0) {
                 this.Error("No page has been added yet");
-            } else if(this.state==3) {
+            } else if(this.state == 3) {
                 this.Error("The document is closed");
             }
         }
@@ -369,14 +369,14 @@ namespace Tephanik
         }
 
         public void Cell(
-            double w, 
-            double h=0, 
-            string txt="", 
-            double border=0, 
-            double ln=0, 
-            string align="", 
-            bool fill=false, 
-            string link=""
+            double w,
+            double h = 0, 
+            string txt = "", 
+            double border = 0, 
+            double ln = 0, 
+            string align = "", 
+            bool fill = false, 
+            string link = ""
         ) {
             // Output a cell
             double _k = this.k;
@@ -436,7 +436,7 @@ namespace Tephanik
                     dx = this.cMargin;
                 if(this.ColorFlag)
                     s += "q " + this.TextColor + " ";
-                s += $"BT {(this.x+dx)*_k:F2} {(this.h-(this.y+.5*h+.3*this.FontSize))*_k:F2} Td ({this._escape(txt)}) Tj ET";
+                s += $"BT {(this.x+dx)*_k:F2} {(this.h-(this.y+.5*h+.3*this.FontSize))*_k:F2} Td ({this.Escape(txt)}) Tj ET";
                 // if(this.underline)
                 //     s += " " . this._dounderline(this.x+dx,this.y+.5*h+.3*this.FontSize,txt);
                 if(this.ColorFlag)
@@ -459,7 +459,7 @@ namespace Tephanik
                 this.x += w;
         }
 
-        private string _escape(string s)
+        private string Escape(string s)
         {
             // Escape special characters
             s = s.Replace("\\","\\\\");
@@ -481,13 +481,17 @@ namespace Tephanik
                 w += cw.Where(x => x.Item1 == s[i]).FirstOrDefault().Item2;
             }
 
-            return w*this.FontSize/1000;
+            return w * this.FontSize / 1000;
         }
 
-        public void AddPage(string orientation="", dynamic? size = null, double rotation=0)
+        public void AddPage(
+            string orientation = "", 
+            dynamic? size = null, 
+            double rotation = 0
+        )
         {
             // Start a new page
-            if(this.state==3)
+            if(this.state == 3)
                 this.Error("The document is closed");
             var family = this.FontFamily;
             var style = this.FontStyle + (this.underline ? "U" : "");
@@ -539,12 +543,12 @@ namespace Tephanik
             if(! string.IsNullOrEmpty(family))
                 this.SetFont(family, style, fontsize);
             // Restore colors
-            if(this.DrawColor!=dc)
+            if(this.DrawColor != dc)
             {
                 this.DrawColor = dc;
                 this.Out(dc);
             }
-            if(this.FillColor!=fc)
+            if(this.FillColor != fc)
             {
                 this.FillColor = fc;
                 this.Out(fc);
@@ -574,7 +578,11 @@ namespace Tephanik
             this.state = 1;
         }
 
-        protected void BeginPage(string orientation, dynamic size, double rotation)
+        protected void BeginPage(
+            string orientation, 
+            dynamic size, 
+            double rotation
+        )
         {
             this.page++;
             this.pages[this.page] = "";
@@ -584,7 +592,7 @@ namespace Tephanik
             this.FontFamily = "";
             var _size = this.DefPageSize;
             // Check page size and orientation
-            if(orientation=="")
+            if(orientation == "")
                 orientation = this.DefOrientation;
             else
                 orientation = orientation.Substring(0, 1).ToUpper();
@@ -632,20 +640,23 @@ namespace Tephanik
             }
         }
 
-        public void SetFont(string family, string style = "", double size = 0)
+        public void SetFont(
+            string family, 
+            string style = "", 
+            double size = 0
+        )
         {
             // Select a font; size given in points
-            if(family == "")
+            if(family == "") {
                 family = this.FontFamily;
-            else
+            } else {
                 family = family.ToLower();
+            }
             style = style.ToUpper();
-            if(style.IndexOf("U") != -1)
-            {
+            if(style.IndexOf("U") != -1) {
                 this.underline = true;
                 style = style.Replace("U", "");
-            }
-            else
+            } else
                 this.underline = false;
             if(style == "IB")
                 style = "BI";
@@ -655,7 +666,7 @@ namespace Tephanik
             if(
                    this.FontFamily == family 
                 && (string) this.FontStyle == style 
-                && this.FontSizePt==size
+                && this.FontSizePt == size
             )
                 return;
             // Test if font is already loaded
@@ -667,7 +678,7 @@ namespace Tephanik
                     family = "helvetica";
                 if(this.CoreFonts.Contains(family))
                 {
-                    if(family=="symbol" || family=="zapfdingbats")
+                    if(family == "symbol" || family == "zapfdingbats")
                         style = "";
                     fontkey = $"{family}{style}".ToLower();
                     if(! this.fonts.ContainsKey(fontkey))
@@ -682,16 +693,16 @@ namespace Tephanik
             this.FontSizePt = size;
             this.FontSize = size/this.k;
             this.CurrentFont = this.fonts[fontkey];
-            if( this.page > 0)
+            if(this.page > 0)
                 this.Out($"BT /F{this.CurrentFont.i} {this.FontSizePt:F2} Tf ET");
         }
 
         public void SetTextColor(double r, double? g = null, double? b = null)
         {
             // Set color for text
-            if((r == 0 && g== 0 && b == 0) || g == null)
+            if((r == 0 && g == 0 && b == 0) || g == null) {
                 this.TextColor = $"{r/255:F3} g";
-            else
+            } else
                 this.TextColor = $"{r/255:F3} {g/255:F3} {b/255:F3} rg";
             this.ColorFlag = (this.FillColor != this.TextColor);
         }
@@ -714,7 +725,11 @@ namespace Tephanik
             this.fonts[fontkey] = font;
         }
 
-        public void Output(string dest = "", string name = "", bool isUTF8 = false)
+        public void Output(
+            string dest = "", 
+            string name = "", 
+            bool isUTF8 = false
+        )
         {
             // Output PDF to some destination
             this.Close();
@@ -755,8 +770,7 @@ namespace Tephanik
                     break;
                 case "F":
                     // Save to local file
-                    try
-                    {
+                    try {
                         var myByteArray = System.Text.Encoding.UTF8.GetBytes(this.buffer.ToString());
                         using(var f = new FileStream(name, FileMode.Create))
                         {
@@ -764,9 +778,7 @@ namespace Tephanik
                         }
                         // var ms = new MemoryStream(myByteArray);
                         // File.WriteAllBytes(name, myByteArray);
-                    }
-                    catch (System.Exception)
-                    {
+                    } catch (System.Exception) {
                         this.Error("Unable to create output file: " + name);
                     }
                     break;
@@ -844,28 +856,25 @@ namespace Tephanik
         {
             var nb = this.page;
             for(var _n = 1; _n <= nb; _n++)
-                this.PageInfo[_n]["n"] = this.n+1+2*(_n-1);
+                this.PageInfo[_n]["n"] = this.n + 1 + 2 * (_n - 1);
             for(var n = 1; n <= nb; n++)
                 this.PutPage(n);
             // Pages root
             this.NewObj(1);
             this.Put("<</Type /Pages");
             var kids = "/Kids [";
-            for(var _n=1; _n<= nb; _n++)
+            for(var _n = 1; _n <= nb; _n++)
                 kids += this.PageInfo[_n]["n"] + " 0 R ";
             this.Put(kids + "]");
             this.Put("/Count " + nb);
-            if(this.DefOrientation=="P")
-            {
+            if(this.DefOrientation == "P") {
                 var w = this.DefPageSize.Item1;
                 var h = this.DefPageSize.Item2;
-            }
-            else
-            {
+            } else {
                 var w = this.DefPageSize.Item2;
                 var h = this.DefPageSize.Item1;
             }
-            this.Put($"/MediaBox [0 0 {w*this.k:F2} {h*this.k:F2}]");
+            this.Put($"/MediaBox [0 0 {w * this.k:F2} {h * this.k:F2}]");
             this.Put(">>");
             this.Put("endobj");
         }
@@ -877,9 +886,9 @@ namespace Tephanik
 
         protected void PutTrailer()
         {
-            this.Put("/Size " + (this.n+1));
+            this.Put("/Size " + (this.n + 1));
             this.Put("/Root " + this.n + " 0 R");
-            this.Put("/Info " + (this.n-1) + " 0 R");
+            this.Put("/Info " + (this.n - 1) + " 0 R");
         }
 
         protected void EndDoc()
@@ -964,7 +973,7 @@ namespace Tephanik
             // Format a text string
             // if(!this._isascii($s))
             //     $s = this._UTF8toUTF16($s);
-            // return '('.this._escape($s).')';
+            // return '('.this.Escape($s).')';
             return $"({s})";
         }
 
@@ -1021,6 +1030,7 @@ namespace Tephanik
                 this.fonts[k].n = this.n+1;
                 var type = font.type;
                 var name = font.name;
+                // TODO: Implement this
                 // if($font["subsetted"])
                 //     $name = "AAAAAA+".$name;
                 if(type == "Core")
@@ -1092,15 +1102,15 @@ namespace Tephanik
                 this.Put($"/OpenAction [{n} 0 R /Fit]");
             else if(this.ZoomMode == "fullwidth")
                 this.Put($"/OpenAction [{n} 0 R /FitH null]");
-            else if(this.ZoomMode=="real")
+            else if(this.ZoomMode == "real")
                 this.Put($"/OpenAction [{n} 0 R /XYZ null null 1]");
             // else if(!is_string(this.ZoomMode))
             //     this.Put($"/OpenAction [{n} 0 R /XYZ null null {this.ZoomMode/100:F2}]");
-            if(this.LayoutMode=="single")
+            if(this.LayoutMode == "single")
                 this.Put("/PageLayout /SinglePage");
-            else if(this.LayoutMode=="continuous")
+            else if(this.LayoutMode == "continuous")
                 this.Put("/PageLayout /OneColumn");
-            else if(this.LayoutMode=="two")
+            else if(this.LayoutMode == "two")
                 this.Put("/PageLayout /TwoColumnLeft");
         }
 
@@ -1131,18 +1141,15 @@ namespace Tephanik
             {
                 var v_array = v as IEnumerable; 
 
-                if (v is System.Runtime.CompilerServices.ITuple)
-                {
+                if (v is System.Runtime.CompilerServices.ITuple) {
                     ranges += $"<{c:X2}> <{c+v.Item2-1:X2}> <{v.Item1:X4}>\n";
                     nbr++;
-                }
-                else
-                {
+                } else {
                     chars += $"<{c:X2}> <{v:X4}>\n";
                     nbc++;
                 }
             }
-            
+
             var s = "/CIDInit /ProcSet findresource begin\n";
             s += "12 dict begin\n";
             s += "begincmap\n";
@@ -1156,14 +1163,12 @@ namespace Tephanik
             s += "1 begincodespacerange\n";
             s += "<00> <FF>\n";
             s += "endcodespacerange\n";
-            if(nbr > 0)
-            {
+            if(nbr > 0) {
                 s += $"{nbr} beginbfrange\n";
                 s += ranges;
                 s += "endbfrange\n";
             }
-            if(nbc > 0)
-            {
+            if(nbc > 0) {
                 s += $"{nbc} beginbfchar\n";
                 s += chars;
                 s += "endbfchar\n";
