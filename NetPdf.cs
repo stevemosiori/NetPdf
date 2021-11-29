@@ -359,7 +359,7 @@ namespace Tephanik
                 _n = ++this.n;
             } 
             this.offsets[(int) _n] = this._getoffset();
-            this._put($"{n} 0 obj");
+            this._put($"{_n} 0 obj");
         }
 
         public bool AcceptPageBreak()
@@ -436,7 +436,7 @@ namespace Tephanik
                     dx = this.cMargin;
                 if(this.ColorFlag)
                     s += "q " + this.TextColor + " ";
-                s += $"BT {(this.x+dx)*k:F2} {(this.h-(this.y+.5*h+.3*this.FontSize))*k:F2} Td ({this._escape(txt)}) Tj ET";
+                s += $"BT {(this.x+dx)*_k:F2} {(this.h-(this.y+.5*h+.3*this.FontSize))*_k:F2} Td ({this._escape(txt)}) Tj ET";
                 // if(this.underline)
                 //     s += " " . this._dounderline(this.x+dx,this.y+.5*h+.3*this.FontSize,txt);
                 if(this.ColorFlag)
@@ -843,16 +843,16 @@ namespace Tephanik
         protected void _putpages()
         {
             var nb = this.page;
+            for(var _n = 1; _n <= nb; _n++)
+                this.PageInfo[_n]["n"] = this.n+1+2*(_n-1);
             for(var n = 1; n <= nb; n++)
-                this.PageInfo[n]["n"] = this.n+1+2*(n-1);
-            for(n = 1; n <= nb; n++)
                 this._putpage(n);
             // Pages root
             this._newobj(1);
             this._put("<</Type /Pages");
             var kids = "/Kids [";
-            for(n=1; n<= nb; n++)
-                kids += this.PageInfo[n]["n"] + " 0 R ";
+            for(var _n=1; _n<= nb; _n++)
+                kids += this.PageInfo[_n]["n"] + " 0 R ";
             this._put(kids + "]");
             this._put("/Count " + nb);
             if(this.DefOrientation=="P")
