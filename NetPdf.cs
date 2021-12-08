@@ -6,65 +6,66 @@ namespace Tephanik
 {
     public class NetPdf
     {
-        private int CurrentPageNo;               // current page number
-        private int CurrentObjectNo;                  // current object number
-        private int[] offsets;            // array of object offsets
+        private int CurrentPageNo;                // current page number
+        private int CurrentObjectNo;              // current object number
+        private int[] offsets;                    // array of object offsets
         private StringBuilder buffer;             // buffer holding in-memory PDF
-        private string[] pages;              // array containing pages
+        private string[] pages;                   // array containing pages
         // private List<string> pages;              // array containing pages
-        private int state;              // current document state
-        private bool compress;           // compression flag
-        private double ScaleFactor;                  // scale factor (number of points in user unit)
-        private string DefOrientation;     // default orientation
-        private string CurOrientation;     // current orientation
-        private dynamic StdPageSizes;       // standard page sizes
-        private (double, double) DefPageSize;        // default page size
-        private (double, double) CurPageSize;        // current page size
-        private double CurRotation;        // current page rotation
+        private int state;                        // current document state
+        private bool compress;                    // compression flag
+        private double ScaleFactor;               // scale factor (number of points in user unit)
+        private string DefOrientation;            // default orientation
+        private string CurOrientation;            // current orientation
+        private dynamic StdPageSizes;             // standard page sizes
+        private (double, double) DefPageSize;     // default page size
+        private (double, double) CurPageSize;     // current page size
+        private double CurRotation;               // current page rotation
         private Dictionary<string, dynamic>[] PageInfo;           // page-related data
         // private List<dynamic> PageInfo;           // page-related data
-        private double wPt, hPt;          // dimensions of current page in points
-        private double CurrentPageWidth, CurrentPageHeight;              // dimensions of current page in user unit
-        private double LeftMargin;            // left margin
-        private double TopMargin;            // top margin
-        private double RightMargin;            // right margin
-        private double BottomMargin;            // page break margin
-        private double CellMargin;            // cell margin
-        private double CurrentX;              // current position in user unit
-        private double CurrentY;              // current position in user unit
-        private double lasth;              // height of last printed cell
-        private double LineWidth;          // line width in user unit
-        private string? fontpath;           // path containing fonts
-        private List<string> CoreFonts;          // array of core font names
-        private Dictionary<string, Font> fonts;              // array of used fonts
-        private object? FontFiles;          // array of font files
-        private object? encodings;          // array of encodings
-        private Dictionary<string, int> cmaps;              // array of ToUnicode CMaps
-        private string FontFamily;         // current font family
-        private string FontStyle;          // current font style
-        private bool underline;          // underlining flag
-        private Font CurrentFont;        // current font info
-        private double FontSizePt;         // current font size in points
-        private double FontSize;           // current font size in user unit
-        private string DrawColor;          // commands for drawing color
-        private string FillColor;          // commands for filling color
-        private string TextColor;          // commands for text color
-        private bool ColorFlag;          // indicates whether fill and text colors are different
-        private bool WithAlpha;          // indicates whether alpha channel is used
-        private double ws;                 // word spacing
+        private double wPt, hPt;                  // dimensions of current page in points
+        private double CurrentPageHeight;         // dimensions of current page in user unit
+        private double CurrentPageWidth;          // dimensions of current page in user unit
+        private double LeftMargin;                // left margin
+        private double TopMargin;                 // top margin
+        private double RightMargin;               // right margin
+        private double BottomMargin;              // page break margin
+        private double CellMargin;                // cell margin
+        private double CurrentX;                  // current position in user unit
+        private double CurrentY;                  // current position in user unit
+        private double lasth;                     // height of last printed cell
+        private double LineWidth;                 // line width in user unit
+        private List<string> CoreFonts;           // array of core font names
+        private Dictionary<string, Font> fonts;   // array of used fonts
+        private object? FontFiles;                // array of font files
+        private object? encodings;                // array of encodings
+        private Dictionary<string, int> cmaps;    // array of ToUnicode CMaps
+        private string FontFamily;                // current font family
+        private string FontStyle;                 // current font style
+        private bool underline;                   // underlining flag
+        private Font CurrentFont;                 // current font info
+        private double FontSizePt;                // current font size in points
+        private double FontSize;                  // current font size in user unit
+        private string DrawColor;                 // commands for drawing color
+        private string FillColor;                 // commands for filling color
+        private string TextColor;                 // commands for text color
+        private bool ColorFlag;                   // indicates whether fill and text colors are different
+        private bool WithAlpha;                   // indicates whether alpha channel is used
+        private double ws;                        // word spacing
         private List<object>? images;             // array of used images
         private List<object>? PageLinks;          // array of links in pages
         private List<object>? links;              // array of internal links
-        private bool AutoPageBreak;      // automatic page breaking
-        private double PageBreakTrigger;   // threshold used to trigger page breaks
-        private bool InHeader;           // flag set when processing header
-        private bool InFooter;           // flag set when processing footer
-        private string? AliasNbPages;       // alias for total number of pages
-        private string? ZoomMode;           // zoom display mode
-        private string? LayoutMode;         // layout display mode
+        private bool AutoPageBreak;               // automatic page breaking
+        private double PageBreakTrigger;          // threshold used to trigger page breaks
+        private bool InHeader;                    // flag set when processing header
+        private bool InFooter;                    // flag set when processing footer
+        private string? AliasNbPages;             // alias for total number of pages
+        private string? ZoomMode;                 // zoom display mode
+        private string? LayoutMode;               // layout display mode
         private Dictionary<string, dynamic> metadata;           // document properties
-        private string PDFVersion;         // PDF version number
+        private string PDFVersion;                // PDF version number
         private string NetPdfVersion = "1.0";
+        
         public NetPdf(
             string orientation = "P",
             string unit = "mm",
@@ -104,8 +105,6 @@ namespace Tephanik
             this.WithAlpha = false;
             this.ws = 0;
             
-
-            this.fontpath = "";
             // Core fonts
             this.CoreFonts = new List<string>{
                 "courier", "helvetica", "times", "symbol", "zapfdingbats"
@@ -198,9 +197,7 @@ namespace Tephanik
             }
         }
 
-        private void Error(string msg) =>
-            // Fatal error
-            throw new Exception("NetPdf error: " + msg);
+        private void Error(string msg) => throw new Exception("NetPdf error: " + msg);
 
         public void Ln(double? h = null)
         {
