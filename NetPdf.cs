@@ -174,7 +174,7 @@ namespace Tephanik
 
             this.metadata = new();
 
-            this.CurrentFont = Font.GetDefaultFont();
+            this.CurrentFont = Font.Times();
             // TODO: fix
             this.AddFont("Helvetica", "I");
         }
@@ -735,7 +735,7 @@ namespace Tephanik
             // if(!this.fonts.ContainsKey(fontkey))
             //     return;
 
-            Font font = Font.GetDefaultFont();
+            Font font = Font.Times();
             font.i = this.fonts.Count + 1;
             
             this.fonts[fontkey] = font;
