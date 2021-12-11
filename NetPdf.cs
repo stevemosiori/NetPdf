@@ -174,7 +174,7 @@ namespace Tephanik
 
             this.CurrentFont = Fonts.Times;
             // TODO: fix
-            this.AddFont("Helvetica", "I");
+            // this.AddFont("Helvetica", "I");
         }
 
         private (double, double) GetPageSize(dynamic size)
@@ -426,13 +426,14 @@ namespace Tephanik
         ) {
             // Output a cell
             double k = this.ScaleFactor;
+            double x, y;
             if(this.CurrentY + h > this.PageBreakTrigger
                && !this.InHeader
                && !this.InFooter
                && this.AcceptPageBreak())
             {
                 // Automatic page break
-                double x = this.CurrentX;
+                x = this.CurrentX;
                 double ws = this.WordSpacing;
                 if(ws > 0)
                 {
@@ -443,7 +444,7 @@ namespace Tephanik
                 this.CurrentX = x;
                 if(ws > 0) {
                     this.WordSpacing = ws;
-                    this.Out($"{ws*k:F3} Tw");
+                    this.Out($"{ws * k:F3} Tw");
                 }
             }
             if(w == 0) {
@@ -457,21 +458,20 @@ namespace Tephanik
                 } else {
                     op = "S";
                 }
-                s = $"{this.CurrentX*k:F2} {(this.CurrentPageHeight-this.CurrentY)*k:F2} {w*k:F2} {-h*k:F2} re {op} ";
+                s = $"{this.CurrentX * k:F2} {(this.CurrentPageHeight - this.CurrentY) * k:F2} {w * k:F2} {-h * k:F2} re {op} ";
             }
-            // if(border is string)
-            // {
-            //     double x = this.CurrentX;
-            //     double _y = this.CurrentY;
-            //     if(strpos(border,"L")!==false)
-            //         s += sprintf("%.2F %.2F m %.2F %.2F l S ",x*k,(this.CurrentPageHeight-y)*k,x*k,(this.CurrentPageHeight-(y+h))*k);
-            //     if(strpos(border,"T")!==false)
-            //         s += sprintf("%.2F %.2F m %.2F %.2F l S ",x*k,(this.CurrentPageHeight-y)*k,(x+w)*k,(this.CurrentPageHeight-y)*k);
-            //     if(strpos(border,"R")!==false)
-            //         s += sprintf("%.2F %.2F m %.2F %.2F l S ",(x+w)*k,(this.CurrentPageHeight-y)*k,(x+w)*k,(this.CurrentPageHeight-(y+h))*k);
-            //     if(strpos(border,"B")!==false)
-            //         s += sprintf("%.2F %.2F m %.2F %.2F l S ",x*k,(this.CurrentPageHeight-(y+h))*k,(x+w)*k,(this.CurrentPageHeight-(y+h))*k);
-            // }
+            
+            x = this.CurrentX;
+            y = this.CurrentY;
+            if(border.IndexOf("L") > -1)
+                s += $"{x * k:F2} {(this.CurrentPageHeight - y) * k:F2} m {x * k:F2} {(this.CurrentPageHeight - (y + h)) * k:F2} l S";
+            if(border.IndexOf("T") > -1)
+                s += $"{x * k:F2} {(this.CurrentPageHeight - y) * k:F2} m {(x + w) * k:F2} {(this.CurrentPageHeight - y) * k:F2} l S";
+            if(border.IndexOf("R") > -1)
+                s += $"{(x + w) * k:F2} {(this.CurrentPageHeight - y) * k:F2} m {(x + w) * k:F2} {(this.CurrentPageHeight - (y + h)) * k:F2} l S";
+            if(border.IndexOf("B") > -1)
+                s += $"{x * k:F2} {(this.CurrentPageHeight - (y + h)) * k:F2} m {(x + w) * k:F2} {(this.CurrentPageHeight - (y + h)) * k:F2} l S";
+
             if(! string.IsNullOrEmpty(txt))
             {
                 double dx = this.CellMargin;
@@ -483,7 +483,7 @@ namespace Tephanik
                     dx = (w - this.GetStringWidth(txt)) / 2;
                 
                 if(this.ColorFlag)
-                    s += "q " + this.TextColor + " ";
+                    s += $"q {this.TextColor} ";
                 s += $"BT {(this.CurrentX+dx)*k:F2} {(this.CurrentPageHeight - (this.CurrentY + 0.5 * h + 0.3 * this.FontSize)) * k:F2} Td ({this.Escape(txt)}) Tj ET";
                 if(this.underline)
                     s += " " + this.DounderLine(this.CurrentX + dx, this.CurrentY + 0.5 * h + 0.3 * this.FontSize, txt);
@@ -512,7 +512,7 @@ namespace Tephanik
             // Underline text
             var up = this.CurrentFont.up;
             var ut = this.CurrentFont.ut;
-            var w = this.GetStringWidth(txt) + this.WordSpacing * 6; // + this.WordSpacing * string.CountSubstring() substr_count($txt,' ');
+            var w = this.GetStringWidth(txt) + this.WordSpacing * txt.Count(x => x == ' ');
             return $"{x * this.ScaleFactor:F2} {(this.CurrentPageHeight - (y - up/1000 * this.FontSize)) * this.ScaleFactor:F2} {w * this.ScaleFactor:F2} {-ut/1000 * this.FontSizePt:F2} re f";
         }
 
@@ -555,7 +555,11 @@ namespace Tephanik
             this.Out( $"{x1 * this.ScaleFactor:F2} {(this.CurrentPageHeight - y1) * this.ScaleFactor:F2} m {x2 * this.ScaleFactor:F2} {(this.CurrentPageHeight - y2) * this.ScaleFactor:F2} l S");
         }
 
-        public void Rect(double x, double y, double w, double h, string style = "")
+        public void Rect(double x,
+                         double y,
+                         double w,
+                         double h,
+                         string style = "")
         {
             // Draw a rectangle
             var op = "S";
@@ -573,7 +577,7 @@ namespace Tephanik
             if(this.FontSizePt == size)
                 return;
             this.FontSizePt = size;
-            this.FontSize = size/this.ScaleFactor;
+            this.FontSize = size / this.ScaleFactor;
             if(this.CurrentPageNo > 0)
                 this.Out($"BT /F{this.CurrentFont.i} {this.FontSizePt:F2} Tf ET");
         }
@@ -711,7 +715,6 @@ namespace Tephanik
 
         public int PageNo()
         {
-            // Get current page number
             return this.CurrentPageNo;
         }
 
@@ -738,7 +741,7 @@ namespace Tephanik
                 orientation = this.DefOrientation;
             else
                 orientation = orientation.Substring(0, 1).ToUpper();
-            if(size is string && size == "")
+            if(size == null)
                 _size = this.DefPageSize;
             else
                 _size = this.GetPageSize(size);
@@ -759,8 +762,8 @@ namespace Tephanik
                     this.CurrentPageWidth = _size.Item2;
                     this.CurrentPageHeight = _size.Item1;
                 }
-                this.wPt = this.CurrentPageWidth*this.ScaleFactor;
-                this.hPt = this.CurrentPageHeight*this.ScaleFactor;
+                this.wPt = this.CurrentPageWidth * this.ScaleFactor;
+                this.hPt = this.CurrentPageHeight * this.ScaleFactor;
                 this.PageBreakTrigger = this.CurrentPageHeight - this.BottomMargin;
                 this.CurOrientation = orientation;
                 this.CurPageSize = _size;
@@ -834,7 +837,7 @@ namespace Tephanik
             this.FontFamily = family;
             this.FontStyle = style;
             this.FontSizePt = size;
-            this.FontSize = size/this.ScaleFactor;
+            this.FontSize = size / this.ScaleFactor;
             this.CurrentFont = this.fonts[fontkey];
             if(this.CurrentPageNo > 0)
                 this.Out($"BT /F{this.CurrentFont.i} {this.FontSizePt:F2} Tf ET");
@@ -879,28 +882,6 @@ namespace Tephanik
                 name = "doc.pdf";
             switch(dest.ToUpper())
             {
-                case "I":
-                    // Send to standard output
-                    // this._checkoutput();
-                    // if(PHP_SAPI!="cli")
-                    // {
-                    //     // We send to a browser
-                    //     header("Content-Type: application/pdf");
-                    //     header("Content-Disposition: inline; ".this._httpencode("filename",$name,$isUTF8));
-                    //     header("Cache-Control: private, max-age=0, must-revalidate");
-                    //     header("Pragma: public");
-                    // }
-                    // echo this.buffer;
-                    break;
-                case "D":
-                    // Download file
-                    // this._checkoutput();
-                    // header("Content-Type: application/x-download");
-                    // header("Content-Disposition: attachment; ".this._httpencode("filename",$name,$isUTF8));
-                    // header("Cache-Control: private, max-age=0, must-revalidate");
-                    // header("Pragma: public");
-                    // echo this.buffer;
-                    break;
                 case "F":
                     // Save to local file
                     try {
@@ -951,7 +932,7 @@ namespace Tephanik
             if(this.PageInfo[n].ContainsKey("size"))
                 this.Put($"/MediaBox [0 0 {this.PageInfo[n]["size"].Item1:F2} {this.PageInfo[n]["size"].Item2:F2}]");
             if(this.PageInfo[n].ContainsKey("rotation"))
-                this.Put("/Rotate " + (string) this.PageInfo[n]["rotation"]);
+                this.Put($"/Rotate {this.PageInfo[n]["rotation"]}");
             this.Put("/Resources 2 0 R");
             // if(isset(this.PageLinks[n]))
             // {
@@ -989,7 +970,9 @@ namespace Tephanik
         {
             var nb = this.CurrentPageNo;
             for(var n = 1; n <= nb; n++) {
-                this.PageInfo[n]["n"] = this.CurrentObjectNo + 1 + 2 * (n - 1);
+                this.PageInfo[n]["n"] = this.CurrentObjectNo + 1 + (2 * (n - 1));
+            }
+            for(var n = 1; n <= nb; n++) {
                 this.PutPage(n);
             }
             // Pages root
