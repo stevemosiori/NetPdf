@@ -2,7 +2,7 @@ using System.Collections;
 using System.Reflection;
 using System.Text;
 
-namespace Tephanik
+namespace Tephanik.NetPdf
 {
     public class NetPdf
     {
@@ -17,9 +17,9 @@ namespace Tephanik
         private double ScaleFactor;               // scale factor (number of points in user unit)
         private string DefOrientation;            // default orientation
         private string CurOrientation;            // current orientation
-        private dynamic StdPageSizes;             // standard page sizes
-        private (double, double) DefPageSize;     // default page size
-        private (double, double) CurPageSize;     // current page size
+        private Dictionary<string, PageSize> StdPageSizes;             // standard page sizes
+        private PageSize DefPageSize;             // default page size
+        private PageSize CurPageSize;             // current page size
         private double CurRotation;               // current page rotation
         private Dictionary<string, dynamic>[] PageInfo;           // page-related data
         private double wPt, hPt;                  // dimensions of current page in points
@@ -123,15 +123,15 @@ namespace Tephanik
             }
 
             // Page sizes
-            this.StdPageSizes = new {
-                a3      = (841.89,  1190.55),
-                a4      = (595.28,  841.89),
-                a5      = (420.94,  595.28),
-                letter  = (612.0,   792.0),
-                legal   = (612.0,   1008.0)
+            this.StdPageSizes = new Dictionary<string, PageSize>{
+                {"a3", new PageSize {Width = 841.89, Height = 1190.55}},
+                {"a4", new PageSize {Width = 595.28, Height = 841.89}},
+                {"a5", new PageSize {Width = 419.53, Height = 595.28}},
+                {"letter", new PageSize {Width = 612.0, Height = 792.0}},
+                {"legal", new PageSize {Width = 612.0, Height = 1008.0}}
             };
 
-            (double, double) size = this.GetPageSize(inputSize);
+            var size = this.GetPageSize(inputSize);
             this.DefPageSize = size;
             this.CurPageSize = size;
             // Page orientation
@@ -139,12 +139,12 @@ namespace Tephanik
             this.DefOrientation = "";
             if(orientation.Equals("p") || orientation.Equals("portrait")) {
                 this.DefOrientation = "P";
-                this.CurrentPageWidth = size.Item1;
-                this.CurrentPageHeight = size.Item2;
+                this.CurrentPageWidth = size.Width;
+                this.CurrentPageHeight = size.Height;
             } else if(orientation.Equals("l") || orientation.Equals("landscape")) {
                 this.DefOrientation = "L";
-                this.CurrentPageWidth = size.Item2;
-                this.CurrentPageHeight = size.Item1;
+                this.CurrentPageWidth = size.Height;
+                this.CurrentPageHeight = size.Width;
             } else {
                 this.Error($"Incorrect orientation: {orientation.ToString()}");
             }
@@ -177,22 +177,20 @@ namespace Tephanik
             // this.AddFont("Helvetica", "I");
         }
 
-        private (double, double) GetPageSize(dynamic size)
+        private PageSize GetPageSize(dynamic size)
         {
             if(size is string)
             {
                 size = size.ToLower();
-                if(this.StdPageSizes.GetType().GetProperty(size) == null) {
+                if(! this.StdPageSizes.ContainsKey(size)) {
                     this.Error("Unknown page size: " + size.ToString());
                 }
-                PropertyInfo info = this.StdPageSizes.GetType().GetProperty(size);
-                (double, double) a = info.GetValue(this.StdPageSizes, null);
-                return (a.Item1 / this.ScaleFactor, a.Item2 / this.ScaleFactor);
+                return this.StdPageSizes[size];
             } else {
-                if(size.Item1 > size.Item2)
-                    return (size.Item2, size.Item1);
+                if(size.Width > size.Height)
+                    return new PageSize { Width = size.Height, Height = size.Width };
                 else
-                    return (size.Item1, size.Item2);
+                    return new PageSize { Width = size.Width, Height = size.Height };
             }
         }
 
@@ -747,20 +745,20 @@ namespace Tephanik
                 _size = this.GetPageSize(size);
             if(
                    orientation != this.CurOrientation 
-                || _size.Item1 != this.CurPageSize.Item1 
-                || _size.Item2 != this.CurPageSize.Item2
+                || _size.Width != this.CurPageSize.Width 
+                || _size.Height != this.CurPageSize.Height
             )
             {
                 // New size or orientation
                 if(orientation == "P")
                 {
-                    this.CurrentPageWidth = _size.Item1;
-                    this.CurrentPageHeight = _size.Item2;
+                    this.CurrentPageWidth = _size.Width;
+                    this.CurrentPageHeight = _size.Height;
                 }
                 else
                 {
-                    this.CurrentPageWidth = _size.Item2;
-                    this.CurrentPageHeight = _size.Item1;
+                    this.CurrentPageWidth = _size.Height;
+                    this.CurrentPageHeight = _size.Width;
                 }
                 this.wPt = this.CurrentPageWidth * this.ScaleFactor;
                 this.hPt = this.CurrentPageHeight * this.ScaleFactor;
@@ -770,8 +768,8 @@ namespace Tephanik
             }
             if(
                    orientation != this.DefOrientation 
-                || _size.Item1 != this.DefPageSize.Item1 
-                || _size.Item2 != this.DefPageSize.Item2
+                || _size.Width != this.DefPageSize.Width 
+                || _size.Height != this.DefPageSize.Height
             ) {
                 this.PageInfo[this.CurrentPageNo]["size"] = (this.wPt, this.hPt);
             }
@@ -987,11 +985,11 @@ namespace Tephanik
 
             double w, h; 
             if(this.DefOrientation == "P") {
-                w = this.DefPageSize.Item1;
-                h = this.DefPageSize.Item2;
+                w = this.DefPageSize.Width;
+                h = this.DefPageSize.Height;
             } else {
-                w = this.DefPageSize.Item2;
-                h = this.DefPageSize.Item1;
+                w = this.DefPageSize.Height;
+                h = this.DefPageSize.Width;
             }
             this.Put($"/MediaBox [0 0 {w * this.ScaleFactor:F2} {h * this.ScaleFactor:F2}]");
             this.Put(">>");

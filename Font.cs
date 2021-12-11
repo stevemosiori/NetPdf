@@ -1,4 +1,4 @@
-namespace Tephanik
+namespace Tephanik.NetPdf
 {
     public class Font
     {
